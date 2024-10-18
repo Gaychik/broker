@@ -26,6 +26,8 @@ async def recv_msg_from_queue():
             port=message['target_port']
             response=requests.post(url=f'http://{host}:{port}')
             if response.status_code==200:
+                with open("service_b_log.txt" , "a") as file:
+                     file.write(response.text+'\n')
                 queue.pop(0)
         await asyncio.sleep(0.1)
                 

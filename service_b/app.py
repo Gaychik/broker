@@ -13,10 +13,9 @@ def execute():
     data = request.get_json()
     print(data)
     response={ 
-                     
                       "device_id":data['device_id'],
                       'status': "Выполнено",
-                      'result': app.devices[data['device_id']]()
+                      'result': app.devices[data['device_id']][data['command']]()
     }
     return Response(response,status=200,mimetype='application/json')
 
@@ -31,9 +30,13 @@ def subscribe():
 
 def turn_lamp():
     return "Лампочка зажглась!"
-
+def off_lamp():
+    return "Лампочка выключилась!"
 
 if __name__=="__main__":
-    app.devices['1'] = turn_lamp
+    app.devices['1'] = { 
+        "on" :turn_lamp,
+        "off" : off_lamp
+    }
     app.run(port=5002,debug=True)
 
