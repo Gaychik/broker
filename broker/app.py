@@ -11,7 +11,7 @@ import asyncio
 
 
     
-queue:List[MessageRequest] = []
+queue:List[dict] = []
 
 @asynccontextmanager
 async def lifespan(engine_app):
@@ -21,13 +21,15 @@ async def lifespan(engine_app):
 async def recv_msg_from_queue():
     while True:
         if queue:
-            message = queue[0]
+            message:dict = queue[0]
             host = message['target_host']
             port=message['target_port']
-            response=requests.post(url=f'http://{host}:{port}')
+            response=requests.post(url=f'http://{host}:{port}',
+                                  json =message )
+
             if response.status_code==200:
-                with open("service_b_log.txt" , "a") as file:
-                     file.write(response.text+'\n')
+                with open('service_b_log.txt','a',encoding='utf-8') as file:
+                    file.write(response.text+'\n')
                 queue.pop(0)
         await asyncio.sleep(0.1)
                 
@@ -66,8 +68,10 @@ def subscribe_service(request:Request,session=Depends(get_db)):
 @app.post('/send')
 async def send_msg(message:MessageRequest, request:Request, session=Depends(get_db)):
     queue.append(message.model_dump())
+    print("Данные из запроса получены")
     service_a = session.query(Service).filter(Service.host==request.client.host).first()
     service_b = session.query(Service).filter(Service.host== message.target_host).first()
+    print("Сервисы получены")
     session.add(Message(command=message.command,
                         device_id=message.device_id,
                         status=message.status,
@@ -75,8 +79,9 @@ async def send_msg(message:MessageRequest, request:Request, session=Depends(get_
                         from_id = service_a.id,
                         to_id =  service_b.id))
     session.commit()
+    print("Данные в базу сохранены")
     message.status="Доставлено"
-    return JSONResponse(status_code=200,content={"status":"Added","message":message})
+    return JSONResponse(status_code=200,content={"status":"Added","message":message.model_dump_json()})
 
 @app.get('/services')
 def services(session=Depends(get_db)):

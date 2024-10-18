@@ -2,6 +2,7 @@ from flask import Flask,request,jsonify,Response
 from dotenv import load_dotenv
 import os
 import requests
+import json
 
 load_dotenv()
 app=Flask(__name__)
@@ -11,13 +12,12 @@ app.devices={}
 @app.route("/",methods=["POST"])
 def execute():
     data = request.get_json()
-    print(data)
     response={ 
                       "device_id":data['device_id'],
                       'status': "Выполнено",
                       'result': app.devices[data['device_id']][data['command']]()
     }
-    return Response(response,status=200,mimetype='application/json')
+    return Response(json.dumps(response,ensure_ascii=False),status=200,mimetype='application/json')
 
 @app.route("/subscribe",methods=["GET"])
 def subscribe():
